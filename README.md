@@ -6,44 +6,62 @@ DocArchitect is an AI-powered CLI tool designed to keep your technical documenta
 
 ## Features
 
-- **Language Agnostic**: Support for TypeScript, Python, Go, Rust, Java, and more out of the box.
+- **Multi-LLM Support**: Built-in support for OpenAI, Anthropic, Google (Gemini), and DeepSeek via Vercel AI SDK.
 - **Architecture-Aware**: Understands relationships between files, not just individual summaries.
-- **DeepSeek Integration**: Optimized for the latest DeepSeek models for high accuracy and lower cost.
+- **Language Agnostic**: Support for TypeScript, Python, Go, Rust, Java, and more out of the box.
 - **Dynamic Updates**: Automatically adds new features and removes deprecated sections in your docs.
-- **CI/CD Ready**: Integrated easily with GitHub Actions (included).
-- **Minimalistic & Sharp**: Generates documentation that reads like code—technical, dense, and meaningful.
+- **CI/CD Ready**: Easy integration with GitHub Actions.
 
-## Installation
+## 🚀 Getting Started
+
+### 1. Installation
 
 ```bash
 npm install -g doc-architect
 ```
 
-## Setup
+### 2. Configure Your Keys
 
-1. Create a `doc-architect.json` at your project root:
+DocArchitect automatically detects your API keys from environment variables:
+- `DEEPSEEK_API_KEY`
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `GOOGLE_GENERATIVE_AI_API_KEY`
+
+### 3. Create a Configuration
+
+Create a `doc-architect.json` at your project root:
 
 ```json
 {
   "sourceRoot": "./src",
   "docsRoot": "./docs",
-  "include": ["**/*.py", "**/*.go"],
+  "provider": "openai",
+  "model": "gpt-4o",
   "mappings": {
-    "core": "core-logic.md",
+    "core": "architecture.md",
     "api": "api-reference.md"
   }
 }
 ```
 
-2. Set your API key:
-```bash
-export DEEPSEEK_API_KEY=your_key_here
-```
+*Note: If `provider` is omitted, it defaults to `deepseek` or auto-detects based on available keys.*
 
-3. Run the sync:
+### 4. Run
+
 ```bash
 doc-architect
 ```
+
+## 🛠 Advanced Config
+
+| Option | Description | Default |
+| :--- | :--- | :--- |
+| `provider` | `openai` \| `anthropic` \| `google` \| `deepseek` | `deepseek` |
+| `model` | Specific model ID | Provider default |
+| `sourceRoot` | Path to source code | `./src` |
+| `docsRoot` | Path where docs are stored | `./docs` |
+| `include` | Glob patterns for source files | `["**/*.{ts,tsx...}"]` |
 
 ## GitHub Action Example
 
