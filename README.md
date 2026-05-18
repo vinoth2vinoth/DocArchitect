@@ -18,7 +18,7 @@ DocArchitect is designed for developers who demand **privacy, cost-efficiency, a
 | :--- | :--- | :--- |
 | **Data Sovereignty** | Snapshots stored in vendor clouds; potential for metadata leaks. | **100% Local.** Your code only hits the LLM endpoint you specify via your private API key. |
 | **LLM Flexibility** | Locked to vendor-selected models. | **BYOK (Bring Your Own Key).** Choose from `DeepSeek-V3`, `Claude 3.5`, `GPT-4o`, or `Gemini`. |
-| **Pricing Model** | High entry cost ($120/mo - $400/mo+) for standard "Pro" features. | **Pay-per-Token.** Documentation sync typically costs **less than $0.05 per run** with DeepSeek. |
+| **Pricing Model** | Fixed monthly subscriptions with seat-based billing. | **Pay-per-Token.** Only pay for what you use directly to your LLM provider. |
 | **Vendor Lock-in** | Proprietary formats or metadata requirements. | **Standard Markdown.** Pure .md files that work perfectly with GitHub, Jekyll, or Docusaurus. |
 | **Context Window** | Restricted by SaaS infrastructure limits per page. | **Architectural Depth.** Can digest 30,000+ characters of context to map cross-file dependencies. |
 | **Air-Gap Support** | Requires internet access to vendor servers. | **CI/CD Native.** Can run in any private runner, proxy, or restricted environment. |
