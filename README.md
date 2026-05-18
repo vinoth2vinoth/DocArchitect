@@ -4,13 +4,14 @@
 
 DocArchitect is an AI-powered CLI tool designed to keep your technical documentation perfectly synchronized with your source code. It treats your codebase as the source of truth and uses DeepSeek's advanced reasoning to update your markdown files whenever your architecture evolves.
 
-## Features
+## ⚔️ Why DocArchitect?
 
-- **Multi-LLM Support**: Built-in support for OpenAI, Anthropic, Google (Gemini), and DeepSeek via Vercel AI SDK.
-- **Architecture-Aware**: Understands relationships between files, not just individual summaries.
-- **Language Agnostic**: Support for TypeScript, Python, Go, Rust, Java, and more out of the box.
-- **Dynamic Updates**: Automatically adds new features and removes deprecated sections in your docs.
-- **CI/CD Ready**: Easy integration with GitHub Actions.
+| Feature | SaaS Tools (Mintlify, etc.) | **DocArchitect** |
+| :--- | :--- | :--- |
+| **Data Privacy** | Code snapshots stored on their Cloud | **Your machine, your rules.** Code never leaves your control except for LLM processing. |
+| **Model Choice** | Locked to their provider | **Bring Your Own Key.** Use OpenAI, Claude, or DeepSeek. |
+| **Cost** | High monthly subscriptions | **Pay-as-you-go tokens.** 90% cheaper for most teams. |
+| **Intelligence** | File summaries | **Architectural awareness.** Maps relationships across your codebase. |
 
 ## 🚀 Getting Started
 
@@ -22,30 +23,27 @@ npm install -g doc-architect
 
 ### 2. Configure Your Keys
 
-DocArchitect automatically detects your API keys from environment variables:
-- `DEEPSEEK_API_KEY`
+DocArchitect automatically detects your API keys:
+- `DEEPSEEK_API_KEY` (Recommended for cost 🤑)
 - `OPENAI_API_KEY`
 - `ANTHROPIC_API_KEY`
 - `GOOGLE_GENERATIVE_AI_API_KEY`
 
 ### 3. Create a Configuration
 
-Create a `doc-architect.json` at your project root:
+Create `doc-architect.json`:
 
 ```json
 {
   "sourceRoot": "./src",
   "docsRoot": "./docs",
-  "provider": "openai",
-  "model": "gpt-4o",
+  "provider": "deepseek",
   "mappings": {
-    "core": "architecture.md",
-    "api": "api-reference.md"
+    "auth": "authentication.md",
+    "db": "database-layer.md"
   }
 }
 ```
-
-*Note: If `provider` is omitted, it defaults to `deepseek` or auto-detects based on available keys.*
 
 ### 4. Run
 
@@ -58,14 +56,22 @@ doc-architect
 | Option | Description | Default |
 | :--- | :--- | :--- |
 | `provider` | `openai` \| `anthropic` \| `google` \| `deepseek` | `deepseek` |
-| `model` | Specific model ID | Provider default |
-| `sourceRoot` | Path to source code | `./src` |
-| `docsRoot` | Path where docs are stored | `./docs` |
+| `maxCodeChars` | Max characters per block (context window) | `30000` |
 | `include` | Glob patterns for source files | `["**/*.{ts,tsx...}"]` |
 
 ## GitHub Action Example
 
+Maintain perfect docs on every push:
+
 ```yaml
+steps:
+  - uses: actions/checkout@v4
+  - name: DocArchitect Sync
+    run: npx doc-architect
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+```
+
 name: Auto-Sync Docs
 on:
   push:
