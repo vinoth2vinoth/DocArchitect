@@ -70,16 +70,19 @@ export class DocArchitect {
       const currentDoc = (await fs.pathExists(docPath)) ? await fs.readFile(docPath, 'utf-8') : '';
 
       console.log(`📡 Analyzing block: ${block} -> ${docFile}`);
+      const startTime = Date.now();
 
       const codeSummary = files.map(f => `--- File: ${f.relPath} ---\n${f.content}`).join('\n\n');
       const fileList = files.map(f => f.relPath).join(', ');
 
-      const { text: newDoc } = await generateText({
+      const { text: newDoc, usage } = await generateText({
         model: this.modelInstance,
         system: `You are the "DocArchitect", an elite documentation engineer. 
         Your task is to keep technical documentation perfectly in sync with the source code.
         You write documentation for developers. It should read like an extension of the code: clear, structured, and technically dense but readable.
-        Avoid boilerplate corporate summaries. Focus on the 'why' and the 'how'.`,
+        
+        CRITICAL RULE: Focus on the ARCHITECTURE. Do not just summarize files. Explain HOW these files interact to form the "${block}" logic.
+        Link functions across files and explain the data flow. Use Mermaid diagrams if they help visualize relations.`,
         prompt: `
             OBJECTIVE:
             Update the documentation for the "${block}" component.
@@ -87,8 +90,8 @@ export class DocArchitect {
 
             CRITICAL REQUIREMENTS:
             1. ACCURACY: Reflect current classes, interfaces, functions, methods, and logic.
-            2. ARCHITECTURE COHERENCE: Describe how these files interact.
-            3. CODE-CENTRIC: Reference specific files and paths. Use Mermaid diagrams if they clarify the flow.
+            2. ARCHITECTURE COHERENCE: Describe how these files interact. Do not treat them as isolated units.
+            3. CODE-CENTRIC: Reference specific files and paths. 
             4. DYNAMIC SYNC: Add new features, remove outdated references.
             5. MINIMALISM: No fluff. Start immediately with the architecture.
 
@@ -104,6 +107,11 @@ export class DocArchitect {
         `,
         temperature: 0.1,
       });
+
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      if (usage) {
+        console.log(`  📊 Stats: ${usage.totalTokens} tokens | ${duration}s | ${this.config.model || 'default-model'}`);
+      }
 
       if (newDoc && newDoc.trim() !== currentDoc.trim()) {
         await fs.ensureDir(path.dirname(docPath));
