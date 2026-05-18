@@ -24,15 +24,35 @@ program
       }
 
       const userConfig = await fs.readJSON(configPath);
-      const apiKey = process.env.DEEPSEEK_API_KEY;
+      
+      let apiKey = userConfig.apiKey;
+      let provider = userConfig.provider || 'deepseek';
+
+      // Auto-detection logic for API keys if not in config
+      if (!apiKey) {
+        if (process.env.DEEPSEEK_API_KEY) {
+          apiKey = process.env.DEEPSEEK_API_KEY;
+          provider = 'deepseek';
+        } else if (process.env.OPENAI_API_KEY) {
+          apiKey = process.env.OPENAI_API_KEY;
+          provider = 'openai';
+        } else if (process.env.ANTHROPIC_API_KEY) {
+          apiKey = process.env.ANTHROPIC_API_KEY;
+          provider = 'anthropic';
+        } else if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+          apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+          provider = 'google';
+        }
+      }
 
       if (!apiKey) {
-        console.error('Error: DEEPSEEK_API_KEY environment variable is required.');
+        console.error('Error: No API key found. Please set DEEPSEEK_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY.');
         process.exit(1);
       }
 
       const architect = new DocArchitect({
         apiKey,
+        provider,
         ...userConfig
       });
 
