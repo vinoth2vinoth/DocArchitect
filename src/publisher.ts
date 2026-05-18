@@ -47,16 +47,32 @@ export async function publishToGithub(repoName: string, token: string, sourceDir
 
     for (const file of files) {
         const content = await fs.readFile(path.join(sourceDir, file));
+        let sha: string | undefined;
+
+        try {
+            const { data } = await octokit.repos.getContent({
+                owner,
+                repo: name,
+                path: file,
+            });
+            if (!Array.isArray(data)) {
+                sha = data.sha;
+            }
+        } catch (e) {
+            // File doesn't exist, sha remains undefined
+        }
+
         try {
             await octokit.repos.createOrUpdateFileContents({
                 owner,
                 repo: name,
                 path: file,
-                message: `Upload ${file}`,
+                message: `Update ${file}`,
                 content: content.toString('base64'),
-                branch: 'main'
+                branch: 'main',
+                sha
             });
-            console.log(`  ✅ Uploaded: ${file}`);
+            console.log(`  ✅ ${sha ? 'Updated' : 'Created'}: ${file}`);
         } catch (err: any) {
             console.error(`  ❌ Failed to upload ${file}:`, err.message);
         }
