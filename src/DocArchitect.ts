@@ -1,11 +1,17 @@
 import fs from 'fs-extra';
 import path from 'node:path';
-import { generateText } from 'ai';
+import { generateText, LanguageModel } from 'ai';
 import { createDeepSeek } from '@ai-sdk/deepseek';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import glob from 'fast-glob';
 
+export type LLMProvider = 'deepseek' | 'openai' | 'anthropic' | 'google';
+
 export interface DocConfig {
-  apiKey: string;
+  apiKey?: string;
+  provider?: LLMProvider;
   sourceRoot: string;
   docsRoot: string;
   mappings: Record<string, string>;
@@ -15,23 +21,44 @@ export interface DocConfig {
 }
 
 export class DocArchitect {
-  private deepseek;
+  private modelInstance: LanguageModel;
   private config: Required<DocConfig>;
 
   constructor(config: DocConfig) {
     this.config = {
-      model: 'deepseek-chat',
+      provider: 'deepseek',
+      apiKey: '',
+      model: '',
       maxCodeChars: 30000,
       include: ['**/*.{ts,tsx,js,jsx,py,go,rs,java,cpp,c,h,cs}'],
       ...config
     };
-    this.deepseek = createDeepSeek({
-      apiKey: this.config.apiKey,
-    });
+
+    this.modelInstance = this.initializeProvider();
+  }
+
+  private initializeProvider(): LanguageModel {
+    const { provider, apiKey, model } = this.config;
+
+    switch (provider) {
+      case 'openai':
+        const openai = createOpenAI({ apiKey });
+        return openai(model || 'gpt-4o');
+      case 'anthropic':
+        const anthropic = createAnthropic({ apiKey });
+        return anthropic(model || 'claude-3-5-sonnet-20240620');
+      case 'google':
+        const google = createGoogleGenerativeAI({ apiKey });
+        return google(model || 'gemini-1.5-pro');
+      case 'deepseek':
+      default:
+        const deepseek = createDeepSeek({ apiKey });
+        return deepseek(model || 'deepseek-chat');
+    }
   }
 
   async sync() {
-    console.log('🚀 DocArchitect: Synchronizing documentation...');
+    console.log(`🚀 DocArchitect: Synchronizing documentation using ${this.config.provider}...`);
 
     const blocks = await this.groupFilesByBlock();
 
@@ -48,7 +75,7 @@ export class DocArchitect {
       const fileList = files.map(f => f.relPath).join(', ');
 
       const { text: newDoc } = await generateText({
-        model: this.deepseek(this.config.model),
+        model: this.modelInstance,
         system: `You are the "DocArchitect", an elite documentation engineer. 
         Your task is to keep technical documentation perfectly in sync with the source code.
         You write documentation for developers. It should read like an extension of the code: clear, structured, and technically dense but readable.
