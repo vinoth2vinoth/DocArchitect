@@ -1,90 +1,174 @@
-import { Octokit } from "@octokit/rest";
+import { Octokit } from '@octokit/rest';
 import fs from 'fs-extra';
 import path from 'node:path';
 import glob from 'fast-glob';
 
-export async function publishToGithub(repoName: string, token: string, sourceDir: string) {
+export interface PublishOptions {
+  private?: boolean;
+  baseBranch?: string;
+  branchName?: string;
+  commitMessage?: string;
+  createPullRequest?: boolean;
+}
+
+const DEFAULT_IGNORE = [
+  '.git/**',
+  'node_modules/**',
+  'dist/**',
+  'coverage/**',
+  '.env',
+  '.env.*',
+  '*.log',
+  '*.pem',
+  '*.key',
+  '*token*',
+  'doc-architect.json'
+];
+
+export async function publishToGithub(repoName: string, token: string, sourceDir: string, options: PublishOptions = {}) {
   const octokit = new Octokit({ auth: token });
-  
-  console.log(`🚀 Creating repository: ${repoName}...`);
-  
+  const privateRepo = options.private ?? true;
+  const baseBranch = options.baseBranch || 'main';
+  const branchName = options.branchName || `doc-architect-sync-${Date.now()}`;
+  const commitMessage = options.commitMessage || 'Sync DocArchitect documentation package';
+  const createPullRequest = options.createPullRequest ?? true;
+
+  console.log(`Preparing repository: ${repoName}...`);
+
   try {
-    // 1. Create or Get the repository
     let repo;
     try {
-        const { data } = await octokit.repos.createForAuthenticatedUser({
-          name: repoName,
-          description: "Architecture-aware documentation generator powered by AI (DeepSeek).",
-          private: false,
-          auto_init: true,
+      const { data } = await octokit.repos.createForAuthenticatedUser({
+        name: repoName,
+        description: 'Architecture-aware documentation generator powered by AI.',
+        private: privateRepo,
+        auto_init: true,
+      });
+      repo = data;
+      console.log(`Repository created: ${repo.html_url}`);
+    } catch (e: any) {
+      if (e.status === 422) {
+        console.log('Repository already exists, fetching existing info...');
+        const { data: user } = await octokit.users.getAuthenticated();
+        const { data } = await octokit.repos.get({
+          owner: user.login,
+          repo: repoName
         });
         repo = data;
-        console.log(`✅ Repository created: ${repo.html_url}`);
-    } catch (e: any) {
-        if (e.status === 422) {
-            console.log(`ℹ️ Repository already exists, fetching existing info...`);
-            const { data } = await octokit.repos.get({
-                owner: (await octokit.users.getAuthenticated()).data.login,
-                repo: repoName
-            });
-            repo = data;
-        } else {
-            throw e;
-        }
+      } else {
+        throw e;
+      }
     }
 
     const owner = repo.owner.login;
     const name = repo.name;
 
-    // 2. Get file list
-    const files = await glob('**/*', { 
-        cwd: sourceDir, 
-        dot: true,
-        ignore: ['node_modules/**', 'dist/**', '.env', 'doc-architect.json']
+    const { data: baseRef } = await octokit.git.getRef({
+      owner,
+      repo: name,
+      ref: `heads/${baseBranch}`
     });
+    const baseSha = baseRef.object.sha;
 
-    console.log(`📦 Uploading ${files.length} files...`);
-
-    for (const file of files) {
-        const content = await fs.readFile(path.join(sourceDir, file));
-        let sha: string | undefined;
-
-        try {
-            const { data } = await octokit.repos.getContent({
-                owner,
-                repo: name,
-                path: file,
-            });
-            if (!Array.isArray(data)) {
-                sha = data.sha;
-            }
-        } catch (e) {
-            // File doesn't exist, sha remains undefined
-        }
-
-        try {
-            await octokit.repos.createOrUpdateFileContents({
-                owner,
-                repo: name,
-                path: file,
-                message: `Update ${file}`,
-                content: content.toString('base64'),
-                branch: 'main',
-                sha
-            });
-            console.log(`  ✅ ${sha ? 'Updated' : 'Created'}: ${file}`);
-        } catch (err: any) {
-            console.error(`  ❌ Failed to upload ${file}:`, err.message);
-        }
+    try {
+      await octokit.git.createRef({
+        owner,
+        repo: name,
+        ref: `refs/heads/${branchName}`,
+        sha: baseSha
+      });
+    } catch (e: any) {
+      if (e.status !== 422) throw e;
+      console.log(`Branch ${branchName} already exists; updating it with a new commit.`);
     }
 
-    console.log(`✨ Successfully pushed to main branch!`);
-    return repo.html_url;
+    const files = await glob('**/*', {
+      cwd: sourceDir,
+      dot: true,
+      onlyFiles: true,
+      ignore: DEFAULT_IGNORE
+    });
 
+    console.log(`Uploading ${files.length} files to branch ${branchName}...`);
+
+    const tree = await Promise.all(files.sort((a, b) => a.localeCompare(b)).map(async (file) => {
+      const content = await fs.readFile(path.join(sourceDir, file));
+      const { data: blob } = await octokit.git.createBlob({
+        owner,
+        repo: name,
+        content: content.toString('base64'),
+        encoding: 'base64'
+      });
+
+      return {
+        path: file.replace(/\\/g, '/'),
+        mode: '100644' as const,
+        type: 'blob' as const,
+        sha: blob.sha
+      };
+    }));
+
+    const { data: baseCommit } = await octokit.git.getCommit({
+      owner,
+      repo: name,
+      commit_sha: baseSha
+    });
+
+    const { data: newTree } = await octokit.git.createTree({
+      owner,
+      repo: name,
+      base_tree: baseCommit.tree.sha,
+      tree
+    });
+
+    const { data: newCommit } = await octokit.git.createCommit({
+      owner,
+      repo: name,
+      message: commitMessage,
+      tree: newTree.sha,
+      parents: [baseSha]
+    });
+
+    await octokit.git.updateRef({
+      owner,
+      repo: name,
+      ref: `heads/${branchName}`,
+      sha: newCommit.sha,
+      force: true
+    });
+
+    let pullRequestUrl: string | undefined;
+    if (createPullRequest) {
+      try {
+        const { data: pr } = await octokit.pulls.create({
+          owner,
+          repo: name,
+          title: commitMessage,
+          head: branchName,
+          base: baseBranch,
+          body: 'Generated by DocArchitect. Review the diff before merging.'
+        });
+        pullRequestUrl = pr.html_url;
+      } catch (e: any) {
+        if (e.status === 422) {
+          console.log('Pull request already exists or there are no changes to compare.');
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    console.log(`Published sync branch: ${branchName}`);
+    return {
+      repoUrl: repo.html_url,
+      branchName,
+      commitSha: newCommit.sha,
+      pullRequestUrl
+    };
   } catch (error: any) {
-    console.error('❌ Failed to publish:', error.message);
+    console.error('Failed to publish:', error.message);
     if (error.response?.data) {
-        console.error('Details:', JSON.stringify(error.response.data, null, 2));
+      console.error('Details:', JSON.stringify(error.response.data, null, 2));
     }
     throw error;
   }

@@ -1,132 +1,72 @@
-# DocArchitect 🏗️ — The Ultimate AI-Powered Code Documentation Generator
+# DocArchitect
 
-[![DeepSeek-Direct](https://img.shields.io/badge/Model-DeepSeek--V3-blue?logo=deepseek)](https://deepseek.com)
-[![License-MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![CLI-Ready](https://img.shields.io/badge/CLI-Ready-orange)](https://npmjs.com/package/doc-architect)
+DocArchitect is a local, architecture-aware documentation sync tool for keeping Markdown docs close to the code they describe.
 
-**Stop manual documentation. Start Architectural Sync.**
+It is designed for guarded documentation updates, not unattended rewrites. The sync engine groups all source blocks that target the same Markdown file into one generation pass, validates local Markdown links, and supports dry-run/check modes before writing files.
 
-DocArchitect is a high-performance, **architecture-aware AI documentation engine** that turns your source code into professional-grade technical documentation. Unlike generic AI scripts, DocArchitect understands the relationships between your files, ensuring your markdown docs evolve alongside your system architecture.
-
----
-
-## ⚡ The Enterprise-Grade Alternative to Mintlify & Swimm
-
-DocArchitect is designed for developers who demand **privacy, cost-efficiency, and elite accuracy.** 
-
-| Feature | SaaS Tools (Mintlify, Swimm) | **DocArchitect** |
-| :--- | :--- | :--- |
-| **Data Sovereignty** | Snapshots stored in vendor clouds; potential for metadata leaks. | **100% Local.** Your code only hits the LLM endpoint you specify via your private API key. |
-| **LLM Flexibility** | Locked to vendor-selected models. | **BYOK (Bring Your Own Key).** Choose from `DeepSeek-V3`, `Claude 3.5`, `GPT-4o`, or `Gemini`. |
-| **Pricing Model** | Fixed monthly subscriptions with seat-based billing. | **Pay-per-Token.** Only pay for what you use directly to your LLM provider. |
-| **Vendor Lock-in** | Proprietary formats or metadata requirements. | **Standard Markdown.** Pure .md files that work perfectly with GitHub, Jekyll, or Docusaurus. |
-| **Context Window** | Restricted by SaaS infrastructure limits per page. | **Architectural Depth.** Can digest 30,000+ characters of context to map cross-file dependencies. |
-| **Air-Gap Support** | Requires internet access to vendor servers. | **CI/CD Native.** Can run in any private runner, proxy, or restricted environment. |
-
----
-
-## 🔥 Key Features
-
-- 🧠 **Architecture-Driven Reasoning**: Don't just summarize files—explain how your system works.
-- 🔄 **Autonomous Auto-Sync**: Automatically updates sections, removes deprecated code references, and adds new features.
-- 🎨 **Multi-LLM Integration**: Built on **Vercel AI SDK**. Seamlessly switch between `DeepSeek`, `GPT-4o`, `Claude 3.5 Sonnet`, and `Gemini 1.5 Pro`.
-- 🌍 **Language Agnostic**: First-class support for **TypeScript, Python, Rust, Go, Java, C++, and Python**.
-- 🛠 **CI/CD Native**: Seamless integration with GitHub Actions for hands-free documentation maintenance.
-
----
-
-## 🚀 Quick Start in 60 Seconds
-
-### 1. Installation
-Install globally via NPM or use `npx` for a zero-install experience:
-```bash
-npm install -g doc-architect
-```
-
-### 2. Configure Your Environment
-DocArchitect automatically detects your API keys from your environment. **DeepSeek is the recommended choice for high-intelligence logic at minimal cost.**
+## Quick Start
 
 ```bash
-export DEEPSEEK_API_KEY="your_api_key"
-# OR set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY
+npm run sync-docs -- --dry-run
+npm run sync-docs
 ```
 
-### 3. Initialize your Project
-Create a `doc-architect.json` file in your root directory:
+Set one provider key in your environment:
+
+```bash
+DEEPSEEK_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+GOOGLE_GENERATIVE_AI_API_KEY=
+```
+
+## Configuration
+
+Create `doc-architect.json` in the repository root:
 
 ```json
 {
-  "sourceRoot": "./src",
-  "docsRoot": "./docs",
+  "sourceRoot": "./src/framework",
+  "docsRoot": "./readme",
   "provider": "deepseek",
   "model": "deepseek-chat",
+  "maxCodeChars": 30000,
+  "include": ["**/*.{ts,tsx,js,jsx}", "**/*.py"],
   "mappings": {
-    "core-logic": "architecture.md",
-    "api-v1": "api-reference.md",
-    "auth-flow": "security.md"
+    "core": "core-orchestration.md",
+    "orchestration": "core-orchestration.md",
+    "memory": "memory-layer.md"
   }
 }
 ```
 
-### 4. Sync Your Docs
-```bash
-doc-architect
-```
+When multiple source blocks map to the same document, DocArchitect analyzes them together and writes the document once. This prevents later blocks from overwriting earlier updates.
 
----
+## Safe Modes
 
-## 🏗 Why "Architecture-Aware"?
+| Command | Behavior |
+| --- | --- |
+| `npm run sync-docs -- --dry-run` | Generates docs and prints a change preview without writing files. |
+| `npm run sync-docs -- --check` | Exits non-zero if generated docs would change files. Useful for CI. |
+| `npm run sync-docs -- --no-validate-links` | Skips local Markdown link validation. |
+| `npm run sync-docs -- --fail-on-validation-warnings` | Treats broken local links as fatal. |
 
-Most AI doc tools treat files as isolated text islands. **DocArchitect sees the whole continent.** 
+## GitHub Publish/Pull
 
-When you define a mapping, DocArchitect feeds the relevant code blocks into the LLM context, allowing it to understand:
-1. **Dependency Graphs**: How Class A in `user.ts` interacts with Service B in `auth.ts`.
-2. **Data Pipelines**: How an API request flows from the controller to the database layer.
-3. **Implicit Logic**: The design patterns and architectural decisions that aren't obvious in single-file summaries.
+The GitHub publisher is safe by default:
 
----
+- Creates private repositories unless explicitly configured otherwise.
+- Publishes to a sync branch, not directly to `main`.
+- Opens a pull request for review.
+- Ignores common secret and build-output patterns such as `.env*`, `*.pem`, `*.key`, `node_modules`, and `dist`.
 
-## 🤖 Advanced Configuration Options
+The puller does not overwrite changed local files by default. If remote content differs from an existing file, it writes a sibling `.incoming` file and reports a conflict for manual review.
 
-| Option | Description | Recommended |
-| :--- | :--- | :--- |
-| `provider` | Choose from `deepseek`, `openai`, `anthropic`, or `google`. | `deepseek` |
-| `model` | Specific model ID (e.g., `gpt-4o`, `claude-3-5-sonnet`). | `deepseek-chat` |
-| `maxCodeChars` | Maximum source code characters to analyze per block (context limit). | `30000` |
-| `include` | Glob patterns for source files to be analyzed. | `["**/*.{ts,py,go...}"]` |
+## Current Limits
 
----
+DocArchitect still depends on an LLM for content generation. Treat it as an assisted documentation workflow:
 
-## 📦 CI/CD: Documentation on Autopilot
-
-Keep your docs fresh on every git push with this GitHub Action:
-
-```yaml
-name: "DocArchitect Auto-Sync"
-on:
-  push:
-    branches: [ main ]
-    paths: [ 'src/**' ]
-
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Auto-Sync Documentation
-        run: npx doc-architect
-        env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-```
-
----
-
-## 🌐 Community & Support
-
-- **Found a bug?** Open an [Issue](https://github.com/vinoth2vinoth/DocArchitect/issues).
-- **Want to contribute?** We love PRs! Check our contribution guidelines.
-
-**Developed with ❤️ for the Open Source community.** 
-
----
-*Keywords: AI Documentation Generator, Auto-generate technical docs, Code to Markdown AI, DeepSeek Documentation Sync, Architecture-aware AI, Technical Writing AI, Developer Workflow Automation.*
+- Review generated diffs before merging.
+- Prefer `--check` in CI.
+- Keep mappings small enough that the relevant code fits in the context budget.
+- Add conventional tests for critical architecture claims where possible.

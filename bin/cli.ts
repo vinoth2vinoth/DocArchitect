@@ -14,6 +14,10 @@ program
   .description('AI-powered documentation sync CLI')
   .version('1.0.0')
   .option('-c, --config <path>', 'path to config file', './doc-architect.json')
+  .option('--dry-run', 'generate documentation and print a change preview without writing files')
+  .option('--check', 'fail if generated documentation would change any files')
+  .option('--no-validate-links', 'skip validation of local markdown links in generated docs')
+  .option('--fail-on-validation-warnings', 'fail when generated docs contain validation warnings')
   .action(async (options) => {
     try {
       const configPath = path.resolve(process.cwd(), options.config);
@@ -53,7 +57,11 @@ program
       const architect = new DocArchitect({
         apiKey,
         provider,
-        ...userConfig
+        ...userConfig,
+        dryRun: Boolean(options.dryRun),
+        check: Boolean(options.check),
+        validateLinks: Boolean(options.validateLinks),
+        failOnValidationWarnings: Boolean(options.failOnValidationWarnings)
       });
 
       await architect.sync();

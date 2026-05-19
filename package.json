@@ -1,7 +1,7 @@
 {
   "name": "doc-architect",
   "version": "1.0.0",
-  "description": "Architectura-aware documentation generator powered by DeepSeek.",
+  "description": "Architecture-aware documentation generator with guarded Markdown sync.",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
@@ -11,6 +11,8 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node bin/cli.js",
+    "test": "tsx tests/regression.ts",
+    "pull-hub": "tsx scripts/pull.ts",
     "publish-hub": "tsx scripts/publish.ts"
   },
   "keywords": [
@@ -24,17 +26,21 @@
   "author": "DocArchitect Open Source",
   "license": "MIT",
   "dependencies": {
-    "ai": "^3.0.0",
-    "@ai-sdk/deepseek": "^0.0.1",
-    "commander": "^12.0.0",
-    "dotenv": "^16.4.5",
-    "fast-glob": "^3.3.2",
-    "fs-extra": "^11.2.0"
+    "@ai-sdk/anthropic": "^3.0.78",
+    "@ai-sdk/deepseek": "^2.0.35",
+    "@ai-sdk/google": "^3.0.75",
+    "@ai-sdk/openai": "^3.0.64",
+    "@octokit/rest": "^22.0.1",
+    "ai": "^6.0.183",
+    "commander": "^14.0.3",
+    "dotenv": "^17.2.3",
+    "fast-glob": "^3.3.3",
+    "fs-extra": "^11.3.5"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
-    "tsx": "^4.7.2",
-    "@types/node": "^20.12.7",
-    "@types/fs-extra": "^11.0.4"
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.14.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2"
   }
 }
