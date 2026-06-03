@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Pre-commit hook for documentation validation
+# Add this to .git/hooks/pre-commit or use husky
+
+echo "🔍 Checking documentation sync..."
+
+# Check if doc-architect config exists
+if [ ! -f "doc-architect.json" ]; then
+    echo "⚠️  No doc-architect.json found. Skipping documentation check."
+    exit 0
+fi
+
+# Check if source files in mapped directories were changed
+CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^src/|^lib/|^app/")
+
+if [ -z "$CHANGED_FILES" ]; then
+    echo "✅ No relevant source files changed. Skipping documentation check."
+    exit 0
+fi
+
+# Run documentation check
+if command -v npx &> /dev/null; then
+    npx doc-architect --check --incremental 2>&1
+    RESULT=$?
+    
+    if [ $RESULT -ne 0 ]; then
+        echo ""
+        echo "❌ Documentation is out of sync!"
+        echo "💡 Run: npx doc-architect --incremental"
+        echo ""
+        echo "Or skip this check with: git commit --no-verify"
+        exit 1
+    fi
+else
+    echo "⚠️  npx not found. Skipping documentation check."
+fi
+
+echo "✅ Documentation is in sync."
+exit 0

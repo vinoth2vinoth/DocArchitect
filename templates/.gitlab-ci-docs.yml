@@ -1,0 +1,63 @@
+# GitLab CI template for DocArchitect
+# Add this to .gitlab-ci.yml
+
+stages:
+  - test
+  - docs
+
+documentation-check:
+  stage: test
+  image: node:20-alpine
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - src/**/*
+        - docs/**/*
+  before_script:
+    - npm ci
+    - npm run build
+  script:
+    - npx doc-architect --validate-config
+    - npx doc-architect --check --incremental
+  variables:
+    DEEPSEEK_API_KEY: $DEEPSEEK_API_KEY
+  allow_failure: false
+
+documentation-sync:
+  stage: docs
+  image: node:20-alpine
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - src/**/*
+        - docs/**/*
+  before_script:
+    - npm ci
+    - npm run build
+    - git config --global user.email "gitlab-ci[bot]@users.noreply.gitlab.com"
+    - git config --global user.name "GitLab CI"
+  script:
+    - npx doc-architect --incremental
+    - git add docs/
+    - if ! git diff --staged --quiet; then
+        git commit -m "docs: auto-update documentation [skip ci]";
+        git push;
+      fi
+  variables:
+    DEEPSEEK_API_KEY: $DEEPSEEK_API_KEY
+  only:
+    - main
+    - master
+
+documentation-health:
+  stage: test
+  image: node:20-alpine
+  script:
+    - npm ci
+    - npm run build
+    - npx doc-architect --health || true
+  artifacts:
+    when: always
+    reports:
+      dotenv: health-report.json
+  allow_failure: true
