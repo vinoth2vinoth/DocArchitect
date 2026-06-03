@@ -319,7 +319,7 @@ export class DocumentationHealth {
         priority: 'medium',
         category: 'efficiency',
         message: 'Incremental caching not enabled or not being utilized',
-        action: 'Enable --incremental flag to reduce token usage by 60-80%'
+        action: 'Enable --incremental flag to reduce token usage'
       });
     } else if (tokenEfficiency.averageTokensPerDoc > 5000) {
       recommendations.push({

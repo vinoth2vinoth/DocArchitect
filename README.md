@@ -6,7 +6,14 @@ DocArchitect is a local-first, architecture-aware documentation tool that preven
 
 ## Why DocArchitect?
 
-Documentation drift is real: **85% of teams struggle** with outdated docs, while **72% lose critical context** during code reviews. Existing solutions force you to choose between:
+Documentation drift is a well-documented challenge in software engineering. Developers frequently encounter:
+
+- Time lost searching for accurate system information
+- Outdated diagrams and architecture docs that misrepresent the codebase
+- Knowledge gaps when team members transition roles or leave
+- Review bottlenecks caused by manual documentation updates
+
+Existing solutions force you to choose between:
 
 - ✍️ Manual maintenance (accurate but time-consuming)
 - 🤖 Full AI rewrites (fast but risky and expensive)
@@ -18,11 +25,11 @@ DocArchitect takes a different approach: **assisted documentation workflows** th
 
 | Problem | Impact | DocArchitect Solution |
 |---------|--------|----------------------|
-| **Documentation Drift** | 85% of teams affected | Architecture-aware grouping ensures docs update when code changes |
-| **Review Overhead** | 68% cite as bottleneck | `--dry-run` and `--check` modes enable safe, reviewable updates |
-| **Token Costs** | 54% concerned about expenses | Incremental generation (60-80% savings) + smart budgeting (30-50% reduction) |
-| **Integration Friction** | 61% struggle with CI/CD | Pre-built GitHub Actions, GitLab CI, and pre-commit hooks |
-| **Context Loss** | 72% experience knowledge gaps | Local-first design keeps docs with code; health scores track coverage |
+| **Documentation Drift** | Outdated docs misrepresent the codebase | Architecture-aware grouping ensures docs update when code changes |
+| **Review Overhead** | Manual doc updates slow down PR reviews | `--dry-run` and `--check` modes enable safe, reviewable updates |
+| **Token Costs** | AI documentation generation can get expensive | Incremental generation and smart context budgeting reduce token usage |
+| **Integration Friction** | Hard to fit into existing CI/CD pipelines | Pre-built GitHub Actions, GitLab CI, and pre-commit hooks |
+| **Knowledge Loss** | Team transitions create information gaps | Local-first design keeps docs with code; health scores track coverage |
 
 ## Key Differentiators
 
@@ -36,8 +43,8 @@ Unlike tools that process files in isolation, DocArchitect analyzes all source b
 - **Private by default**: GitHub publisher creates private repos unless configured otherwise
 
 ### 💰 Cost-Optimized Token Usage
-- **Incremental generation**: SHA-256 caching detects unchanged files (60-80% token savings)
-- **Smart context budgeting**: File importance scoring prioritizes critical architecture (30-50% reduction)
+- **Incremental generation**: SHA-256 caching detects unchanged files, avoiding redundant API calls
+- **Smart context budgeting**: File importance scoring prioritizes critical architecture to optimize token limits
 - **AST-aware change detection**: Only regenerates sections with actual API changes
 - **Multi-provider support**: Switch between DeepSeek, OpenAI, Anthropic, Google based on cost/performance needs
 
@@ -100,7 +107,7 @@ When multiple source blocks map to the same document, DocArchitect analyzes them
 | `npm run sync-docs -- --check` | Exits non-zero if generated docs would change files. Useful for CI. |
 | `npm run sync-docs -- --no-validate-links` | Skips local Markdown link validation. |
 | `npm run sync-docs -- --fail-on-validation-warnings` | Treats broken local links as fatal. |
-| `npm run sync-docs -- --incremental` | Enables incremental generation with caching (60-80% token savings). |
+| `npm run sync-docs -- --incremental` | Enables incremental generation with caching. |
 | `npm run sync-docs -- --validate-config` | Validates configuration file and exits. |
 | `npm run sync-docs -- --health` | Analyzes and displays documentation health metrics. |
 | `npm run sync-docs -- --smart-budget` | Enables smart context budgeting based on file importance scoring. |
@@ -190,7 +197,7 @@ Budget strategies:
 - **coverage**: Prioritize most important files, may omit low-priority ones
 - **depth**: Include all files but summarize low-priority ones
 
-This feature can reduce token usage by 30-50% while maintaining documentation quality for critical architecture components.
+This feature helps optimize token usage while maintaining documentation quality for critical architecture components.
 
 ## CI/CD Integration
 
@@ -220,7 +227,7 @@ The included workflow:
 ## Who Should Use DocArchitect?
 
 **Ideal for:**
-- 🏢 Mid-size tech companies (50-500 engineers) maintaining complex architectures
+- 🏢 Teams maintaining complex architectures
 - 🔓 Open source projects needing up-to-date contributor documentation
 - 🛡️ Teams with compliance requirements for documentation accuracy
 - 💰 Cost-conscious organizations wanting AI efficiency without vendor lock-in
@@ -259,8 +266,8 @@ DocArchitect is designed as an **assisted documentation workflow**, not a replac
 ## Community & Support
 
 - 📖 [Templates Documentation](templates/README.md) - CI/CD setup guides
-- 🐛 [Issue Tracker](https://github.com/your-org/doc-architect/issues) - Report bugs or request features
-- 💬 Discussions - Share use cases and best practices
+- 🐛 [Issue Tracker](../../issues) - Report bugs or request features
+- 💬 [Discussions](../../discussions) - Share use cases and best practices
 
 ---
 
