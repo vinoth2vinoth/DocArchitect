@@ -1,0 +1,62 @@
+name: Documentation Sync
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'docs/**'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  docs-sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build doc-architect
+        run: npm run build
+
+      - name: Validate configuration
+        run: npx doc-architect --validate-config
+
+      - name: Check documentation sync (PR only)
+        if: github.event_name == 'pull_request'
+        run: npx doc-architect --check --incremental
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          # Or use: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY
+
+      - name: Update documentation (push only)
+        if: github.event_name == 'push'
+        run: |
+          npx doc-architect --incremental
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/
+          if ! git diff --staged --quiet; then
+            git commit -m "docs: auto-update documentation [skip ci]"
+            git push
+          fi
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+      - name: Health check
+        if: always()
+        run: npx doc-architect --health || true
